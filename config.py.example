@@ -1,0 +1,123 @@
+"""
+配置管理模块 - 模板文件
+使用说明：
+1. 复制此文件为 config.py
+2. 填入你的WorldQuant Brain账户信息
+3. 或者使用环境变量（推荐）
+"""
+import os
+from dataclasses import dataclass
+from typing import List, Optional
+
+
+@dataclass
+class WorldQuantConfig:
+    """WorldQuant API配置"""
+    # ⚠️ 重要：不要将真实账户信息提交到Git！
+    # 方式1：直接填写（不推荐）
+    username: str = "your_email@example.com"
+    password: str = "your_password_here"
+    
+    # 方式2：使用环境变量（推荐）
+    # username: str = os.getenv("WQ_USERNAME", "your_email@example.com")
+    # password: str = os.getenv("WQ_PASSWORD", "your_password_here")
+    
+    api_base_url: str = "https://api.worldquantbrain.com"
+    
+    # 回测参数
+    instrument_type: str = "EQUITY"
+    region: str = "USA"
+    universe: str = "TOP3000"
+    delay: int = 1
+    neutralization: str = "SUBINDUSTRY"
+    truncation: float = 0.08
+    pasteurization: str = "ON"
+    
+    # 并发控制
+    max_concurrent_simulations: int = 3
+    retry_delay: int = 600  # 限流后等待时间（秒）
+
+
+@dataclass
+class TransformerConfig:
+    """Transformer模型配置"""
+    # 模型架构
+    vocab_size: int = 1000  # 词汇表大小
+    d_model: int = 256  # 模型维度
+    nhead: int = 8  # 注意力头数
+    num_encoder_layers: int = 6
+    num_decoder_layers: int = 6
+    dim_feedforward: int = 1024
+    dropout: float = 0.1
+    max_seq_length: int = 128
+    
+    # 训练参数
+    batch_size: int = 32
+    learning_rate: float = 1e-4
+    num_epochs: int = 50
+    warmup_steps: int = 1000
+    gradient_clip: float = 1.0
+    
+    # 数据分割
+    train_ratio: float = 0.8
+    val_ratio: float = 0.1
+    test_ratio: float = 0.1
+    
+    # 保存路径
+    model_save_dir: str = "./checkpoints"
+    log_dir: str = "./logs"
+
+
+@dataclass
+class FactoryConfig:
+    """Alpha工厂配置"""
+    # 数据集
+    dataset_id: str = "fundamental6"
+    
+    # 操作符
+    basic_ops: List[str] = None
+    ts_ops: List[str] = None
+    group_ops: List[str] = None
+    
+    # 时间窗口参数
+    time_windows: List[int] = None
+    
+    # 生成数量
+    max_first_order: int = 10000
+    max_second_order: int = 5000
+    max_third_order: int = 2000
+    
+    # 筛选阈值
+    min_sharpe: float = 0.5
+    min_fitness: float = 0.3
+    
+    def __post_init__(self):
+        if self.basic_ops is None:
+            self.basic_ops = ['+', '-', '*', '/', 'rank', 'log', 'abs', 'sign']
+        if self.ts_ops is None:
+            self.ts_ops = ['ts_delay', 'ts_delta', 'ts_mean', 'ts_std_dev', 
+                          'ts_min', 'ts_max', 'ts_rank']
+        if self.group_ops is None:
+            self.group_ops = ['group_mean', 'group_rank']
+        if self.time_windows is None:
+            self.time_windows = [5, 10, 20, 60, 120, 252]
+
+
+@dataclass
+class Config:
+    """全局配置"""
+    wq: WorldQuantConfig = None
+    transformer: TransformerConfig = None
+    factory: FactoryConfig = None
+    
+    def __post_init__(self):
+        if self.wq is None:
+            self.wq = WorldQuantConfig()
+        if self.transformer is None:
+            self.transformer = TransformerConfig()
+        if self.factory is None:
+            self.factory = FactoryConfig()
+
+
+# 全局配置实例
+config = Config()
